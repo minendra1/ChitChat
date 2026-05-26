@@ -43,7 +43,7 @@ console.log(error)
 
     },[input])
   return (
-    <div className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200  relative ${!selectedUser?"block":"hidden"}`}>
+    <div className={`lg:w-[30%] w-full h-full overflow-hidden lg:block bg-slate-200  relative ${!selectedUser?"Block":"Hidden"}`}>
         <div className='w-[60px] h-[60px] mt-[10px] rounded-full overflow-hidden flex justify-center items-center bg-[#20c7ff] shadow-gray-500 text-gray-700 cursor-pointer shadow-lg fixed bottom-[20px] left-[10px]' onClick={handleLogOut}>
    <BiLogOutCircle className='w-[25px] h-[25px]'/>
 </div>
@@ -68,7 +68,7 @@ console.log(error)
         </div> }
 
       <div className='w-full h-[300px] bg-[#20c7ff] rounded-b-[30%] shadow-gray-400 shadow-lg flex flex-col justify-center px-[20px] '>
-    <h1 className='text-white font-bold text-[25px]'>chatly</h1>
+    <h1 className='text-white font-bold text-[25px]'>ChiChat</h1>
    <div className='w-full flex justify-between items-center'>
     <h1 className='text-gray-800 font-bold text-[25px]'>Hii , {userData.name || "user"}</h1>
     <div className='w-[60px] h-[60px] rounded-full overflow-hidden flex justify-center items-center bg-white cursor-pointer shadow-gray-500 shadow-lg' onClick={()=>navigate("/profile")}>
