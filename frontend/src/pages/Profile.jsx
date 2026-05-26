@@ -1,11 +1,11 @@
 import React from 'react'
 
-function App() {
+function Profile() {
   return (
     <div>
-      
+      Profile
     </div>
   )
 }
 
-export default App
+export default Profile
