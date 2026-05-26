@@ -18,4 +18,5 @@ app.use("/api/auth",authRouter)
 app.listen(port,()=>{
     connectDb()
     console.log("server started")
+    
 })
