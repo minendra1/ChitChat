@@ -12,6 +12,7 @@ function Profile() {
     let dispatch=useDispatch()
     let navigate=useNavigate()
 let [name,setName]=useState(userData.name || "")
+let [err, setErr] = useState(""); 
 let [frontendImage,setFrontendImage]=useState(userData.image || dp)
 let [backendImage,setBackendImage]=useState(null)
 let image=useRef()
@@ -40,6 +41,7 @@ try {
 } catch (error) {
     console.log(error)
     setSaving(false)
+    setErr(error?.response?.data?.message || "Network Error: Could not connect")
 }
 }
   return (
@@ -60,6 +62,7 @@ try {
         <input type="text" placeholder="Enter your name" className='w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-700 text-[19px]' onChange={(e)=>setName(e.target.value)} value={name}/>
         <input type="text"  readOnly className='w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-400 text-[19px]' value={userData?.userName}/>
         <input type="email" readOnly className='w-[90%] h-[50px] outline-none border-2 border-[#20c7ff] px-[20px] py-[10px] bg-[white] rounded-lg shadow-gray-400 shadow-lg text-gray-400 text-[19px]' value={userData?.email}/>
+        {err && <p className='text-red-500 font-semibold'>{"*" + err}</p>}
         <button className='px-[20px] py-[10px] bg-[#20c7ff] rounded-2xl shadow-gray-400 shadow-lg text-[20px] w-[200px] mt-[20px] font-semibold hover:shadow-inner' disabled={saving}>{saving?"Saving...":"Save Profile"}</button>
      </form>
     </div>

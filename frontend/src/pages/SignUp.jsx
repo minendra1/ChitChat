@@ -29,10 +29,10 @@ userName,email,password
             setLoading(false)
             setErr("")
         } catch (error) {
-            console.log(error)
-            setLoading(false)
-            setErr(error?.response?.data?.message)
-        }
+    console.log(error)
+    setLoading(false)
+    setErr(error?.response?.data?.message || "Network Error: Cannot connect to server")
+}
     }
 
   return (
