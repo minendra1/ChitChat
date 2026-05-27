@@ -14,6 +14,8 @@ try {
 } catch (error) {
     fs.unlinkSync(filePath)
     console.log(error)
+    console.log("CLOUDINARY ERROR:", error);
+        throw new Error("Cloudinary upload failed");
 }
 }
 
