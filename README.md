@@ -1,10 +1,6 @@
 # ChitChat 💬
 
-![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue?style=for-the-badge&logo=mongodb)
-![Socket.io](https://img.shields.io/badge/Socket.io-Real--Time-black?style=for-the-badge&logo=socket.io)
-![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css)
-
-A full-stack, real-time messaging application designed for seamless user communication. ChitChat features instant messaging, media sharing, live typing indicators, and a responsive modern UI with a built-in Dark Mode.
+ChitChat is a full-stack, real-time messaging application. It allows users to connect instantly, exchange text and media, and manage their conversations dynamically. Unlike standard polling-based chats, ChitChat leverages WebSocket connections for instant message delivery, live typing indicators, and real-time message editing/deletion, providing a seamless and interactive user experience.
 
 ## ✨ Features
 
@@ -19,14 +15,13 @@ A full-stack, real-time messaging application designed for seamless user communi
 ## 🛠️ Tech Stack
 
 **Client:**
-* React (Vite)
+* React + Vite
 * Redux Toolkit (State Management)
-* Tailwind CSS (Styling)
-* Socket.io-client
-* Emoji-picker-react
+* Tailwind CSS (Native Dark Mode)
+* Socket.io-client & Emoji-picker-react
 
-**Server:**
-* Node.js & Express.js
+**Backend:**
+* Node.js + Express.js
 * MongoDB & Mongoose
 * Socket.io (WebSockets)
 * JSON Web Tokens (JWT) & Bcryptjs
@@ -37,30 +32,130 @@ A full-stack, real-time messaging application designed for seamless user communi
 The following diagram illustrates the data flow and real-time event architecture of the application.
 
 ```mermaid
-sequenceDiagram
-    participant Client (React)
-    participant Server (Express)
-    participant Socket.IO
-    participant Database (MongoDB)
-    participant Cloudinary
+graph TD
+    %% Styling
+    classDef user fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
+    classDef front fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
+    classDef back fill:#6366f1,stroke:#4338ca,stroke-width:2px,color:#fff;
+    classDef db fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#fff;
+    classDef cloud fill:#0ea5e9,stroke:#0369a1,stroke-width:2px,color:#fff;
 
-    %% Authentication Flow
-    Client->>Server: POST /api/auth/login (Credentials)
-    Server->>Database: Verify User & Password
-    Database-->>Server: User Data
-    Server-->>Client: Set HTTP-Only JWT Cookie & Return User
-
-    %% Socket Connection
-    Client->>Socket.IO: Connect with User ID
-    Socket.IO-->>Client: Broadcast Online Status
+    %% Authentication & Connection Flow
+    U((User)):::user -->|Log in / Sign up| F[React Frontend]:::front
+    F -->|Credentials| B[Express Backend]:::back
+    B -->|Verify & Tokenize| DB[(MongoDB)]:::db
+    B -->|Set HTTP-Only Cookie| F
+    F -->|Initialize Connection| S[Socket.IO Server]:::back
+    S -->|Broadcast Status| F
 
     %% Messaging Flow
-    Client->>Server: POST /api/message/send (Text/Image)
-    alt Has Image
-        Server->>Cloudinary: Upload Image stream
-        Cloudinary-->>Server: Return Secure URL
-    end
-    Server->>Database: Save Message & Update Conversation
-    Database-->>Server: Saved Data
-    Server->>Socket.IO: Emit 'newMessage' event to Receiver
-    Socket.IO-->>Client: Update UI instantly
+    U -->|Sends Message + Image| F
+    F -->|Multipart FormData| B
+    B --> C{Cloudinary API}:::cloud
+    C -->|Returns Secure URL| B
+    B -->|Save Document| DB
+    B -->|Emit 'newMessage'| S
+    S -->|Streamed Update| F
+```
+
+## 📂 Folder Structure
+
+```text
+ChitChat/
+├── backend/
+│   ├── config/             # Database and Cloudinary configuration
+│   ├── controllers/        # Route logic (auth, user, messages)
+│   ├── middlewares/        # JWT verification (isAuth) and Multer
+│   ├── models/             # Mongoose schemas (User, Message, Conversation)
+│   ├── public/             # Temporary storage for local file uploads
+│   ├── routes/             # Express API routing definitions
+│   ├── socket/             # Socket.io connection and event handling
+│   ├── .env                # Environment variables (Ignored in git)
+│   ├── index.js            # Express server entry point
+│   └── package.json
+│
+└── frontend/
+    ├── public/
+    ├── src/
+    │   ├── assets/         # Static images and icons
+    │   ├── components/     # Reusable UI (SideBar, MessageArea, Message Bubbles)
+    │   ├── customHooks/    # Data fetching logic (getCurrentUser, etc.)
+    │   ├── pages/          # Primary views (Home, Login, SignUp, Profile)
+    │   ├── redux/          # Global state slices and store setup
+    │   ├── App.jsx         # Main router and Socket initialization
+    │   ├── main.jsx        # React root and Context providers
+    │   └── index.css       # Tailwind entry point and global styles
+    ├── tailwind.config.js
+    ├── vite.config.js
+    └── package.json
+```
+
+## 🚀 Installation and Setup
+
+Follow these steps to run the project locally on your machine.
+
+### Prerequisites
+* Node.js (v16 or higher)
+* MongoDB (Local instance or MongoDB Atlas cluster)
+* Cloudinary Account
+
+### 1. Setup the Backend
+Open a terminal in the `backend` directory:
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in the `backend` directory and add the following variables:
+```env
+PORT=8000
+MONGODB_URL=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_jwt_key
+CLOUD_NAME=your_cloudinary_cloud_name
+API_KEY=your_cloudinary_api_key
+API_SECRET=your_cloudinary_api_secret
+```
+
+Start the backend server:
+```bash
+npm run dev
+```
+
+### 2. Setup the Frontend
+Open a new terminal in the `frontend` directory:
+```bash
+cd frontend
+npm install
+```
+
+Start the Vite development server:
+```bash
+npm run dev
+```
+
+## 🌐 API Endpoints
+
+### Authentication Routes (`/api/auth`)
+* `POST /signup` - Register a new user
+* `POST /login` - Authenticate user and set JWT cookie
+* `GET /logout` - Clear JWT cookie
+
+### User Routes (`/api/user`)
+* `GET /current` - Get active session user profile
+* `GET /others` - Fetch list of all other users
+* `GET /search?query=` - Search users by name or username
+* `PUT /profile` - Update display name and avatar
+
+### Message Routes (`/api/message`)
+* `POST /send/:receiverId` - Send a text or image message
+* `GET /get/:receiverId` - Retrieve conversation history
+* `PUT /edit/:messageId` - Update text of an existing message
+* `DELETE /delete/:messageId` - Remove a message from the database
+
+## 🔮 Future Enhancements
+* Implementation of Read Receipts (Seen/Delivered status).
+* Group Chat functionality.
+* Cursor-based pagination for loading older messages.
+* Push notifications for offline users.
+* end to end encryption messaging using passkey
+* 1:1 video call and group call
