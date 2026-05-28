@@ -1,14 +1,61 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
+import getCurrentUser from './customHooks/getCurrentUser'
+import getOtherUsers from './customHooks/getOtherUsers'
+import { useDispatch, useSelector } from 'react-redux'
+import Home from './pages/Home'
+import Profile from './pages/Profile'
+import { io } from "socket.io-client"
+import { serverUrl } from './main'
+import { setOnlineUsers, setSocket } from './redux/userSlice'
 
 function App() {
+  getCurrentUser()
+  getOtherUsers()
+  
+  let userData = useSelector(state => state.user.userData)
+  let darkMode = useSelector(state => state.user.darkMode)
+  let dispatch = useDispatch()
+
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    
+    if (userData?._id) {
+      const socketio = io(`${serverUrl}`, {
+        query: {
+          userId: userData._id
+        }
+      })
+      dispatch(setSocket(socketio))
+
+      socketio.on("getOnlineUsers", (users) => {
+        dispatch(setOnlineUsers(users))
+      })
+
+      return () => {
+        socketio.close()
+        dispatch(setSocket(null))
+      }
+    }
+  }, [userData?._id, dispatch])
+
   return (
-   <Routes>
-       <Route path='/login' element={<Login/>}/>
-       <Route path='/signup' element={<SignUp/>}/>
-   </Routes>
+    <Routes>
+      <Route path='/login' element={!userData ? <Login /> : <Navigate to="/" />} />
+      <Route path='/signup' element={!userData ? <SignUp /> : <Navigate to="/profile" />} />
+      <Route path='/' element={userData ? <Home /> : <Navigate to="/login" />} />
+      <Route path='/profile' element={userData ? <Profile /> : <Navigate to="/signup" />} />
+    </Routes>
   )
 }
 

@@ -1,37 +1,40 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const userSlice=createSlice({
-   name:"user",
-   initialState:{
-    userData:null,
-    otherUsers:null,
-    selectedUser:null,
-    socket:null,
-    onlineUsers:null,
-    searchData:null
+const userSlice = createSlice({
+   name: "user",
+   initialState: {
+    userData: null,
+    otherUsers: null,
+    selectedUser: null,
+    socket: null,
+    onlineUsers: null,
+    searchData: null,
+    
+    darkMode: localStorage.getItem('theme') === 'dark' || false 
    },  
-   reducers:{
-    setUserData:(state,action)=>{
-   state.userData=action.payload
-    },
-    setOtherUsers:(state,action)=>{
-      state.otherUsers=action.payload
-       },
-       setSelectedUser:(state,action)=>{
-         state.selectedUser=action.payload
-          }
-          ,
-          setSocket:(state,action)=>{
-            state.socket=action.payload
-             },
-             setOnlineUsers:(state,action)=>{
-              state.onlineUsers=action.payload
-               },
-               setSearchData:(state,action)=>{
-                state.searchData=action.payload
-                 }
+   reducers: {
+    setUserData: (state, action) => { state.userData = action.payload },
+    setOtherUsers: (state, action) => { state.otherUsers = action.payload },
+    setSelectedUser: (state, action) => { state.selectedUser = action.payload },
+    setSocket: (state, action) => { state.socket = action.payload },
+    setOnlineUsers: (state, action) => { state.onlineUsers = action.payload },
+    setSearchData: (state, action) => { state.searchData = action.payload },
+  
+    toggleDarkMode: (state) => {
+        state.darkMode = !state.darkMode;
+        localStorage.setItem('theme', state.darkMode ? 'dark' : 'light');
+    }
    }
 })
 
-export const {setUserData, setOtherUsers,setSelectedUser,setSocket,setOnlineUsers,setSearchData}=userSlice.actions
+export const { 
+    setUserData, 
+    setOtherUsers, 
+    setSelectedUser, 
+    setSocket, 
+    setOnlineUsers, 
+    setSearchData, 
+    toggleDarkMode 
+} = userSlice.actions
+
 export default userSlice.reducer
