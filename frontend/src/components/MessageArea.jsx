@@ -24,6 +24,10 @@ function MessageArea() {
   let messagesEndRef = useRef(null)
   let { messages } = useSelector(state => state.message)
 
+  // --- NEW: Typing Indicator State ---
+  let [isTyping, setIsTyping] = useState(false)
+  let typingTimeoutRef = useRef(null)
+
   const handleImage = (e) => {
     let file = e.target.files[0]
     setBackendImage(file)
@@ -42,12 +46,32 @@ function MessageArea() {
       }
       let result = await axios.post(`${serverUrl}/api/message/send/${selectedUser._id}`, formData, { withCredentials: true })
       dispatch(setMessages([...(messages || []), result.data]))
+      
+      // Stop typing status after sending
+      socket?.emit("stopTyping", selectedUser._id);
+      
       setInput("")
       setFrontendImage(null)
       setBackendImage(null)
     } catch (error) {
       console.log(error)
     }
+  }
+
+  // --- NEW: Handle Input Change with Typing Emit ---
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    
+    // Emit typing status
+    socket?.emit("typing", selectedUser._id);
+
+    // Clear timeout if user is still typing
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    // Stop typing if no key is pressed for 1.5 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+        socket?.emit("stopTyping", selectedUser._id);
+    }, 1500);
   }
 
   const onEmojiClick = (emojiData) => {
@@ -57,20 +81,36 @@ function MessageArea() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, isTyping]) // Added isTyping so it scrolls down when the indicator appears
 
   useEffect(() => {
     socket?.on("newMessage", (mess) => {
       dispatch(setMessages((prev) => [...(prev || []), mess]))
     })
-    return () => socket?.off("newMessage")
-  }, [socket, dispatch])
+
+    // --- NEW: Typing Listeners ---
+    socket?.on("userTyping", (userId) => {
+        if (selectedUser?._id === userId) setIsTyping(true);
+    });
+    
+    socket?.on("userStoppedTyping", (userId) => {
+        if (selectedUser?._id === userId) setIsTyping(false);
+    });
+
+    return () => {
+        socket?.off("newMessage")
+        socket?.off("userTyping")
+        socket?.off("userStoppedTyping")
+    }
+  }, [socket, dispatch, selectedUser])
 
   return (
-    <div className={`lg:w-[70%] relative ${selectedUser ? "flex" : "hidden"} lg:flex w-full h-full bg-slate-200 border-l-2 border-gray-300 overflow-hidden`}>
+    // Added Dark Mode wrapper classes
+    <div className={`lg:w-[70%] relative ${selectedUser ? "flex" : "hidden"} lg:flex w-full h-full bg-slate-200 dark:bg-gray-800 border-l-2 border-gray-300 dark:border-gray-700 overflow-hidden`}>
       {selectedUser &&
         <div className='w-full h-[100vh] flex flex-col overflow-hidden gap-[20px] items-center'>
-          <div className='w-full h-[100px] bg-[#1797c2] rounded-b-[30px] shadow-gray-400 shadow-lg gap-[20px] flex items-center px-[20px] '>
+          {/* Top Header - Added dark mode background */}
+          <div className='w-full h-[100px] bg-[#1797c2] dark:bg-[#1a7a9c] rounded-b-[30px] shadow-gray-400 shadow-lg gap-[20px] flex items-center px-[20px] '>
             <div className='cursor-pointer' onClick={() => dispatch(setSelectedUser(null))}>
               <IoIosArrowRoundBack className='w-[40px] h-[40px] text-white' />
             </div>
@@ -88,18 +128,36 @@ function MessageArea() {
                 <SenderMessage key={mess._id || index} image={mess.image} message={mess.message} /> :
                 <ReceiverMessage key={mess._id || index} image={mess.image} message={mess.message} />
             ))}
+            
+            {/* --- NEW: Typing Indicator UI --- */}
+            {isTyping && (
+                <div className='flex items-start gap-[10px] mt-2 mb-2'>
+                    <div className='w-[40px] h-[40px] rounded-full overflow-hidden flex justify-center items-center bg-white shadow-gray-500 shadow-lg'>
+                        <img src={selectedUser?.image || dp} alt="dp" className='h-[100%]' />
+                    </div>
+                    <div className='px-[20px] py-[10px] bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 italic text-[15px] rounded-tl-none rounded-2xl shadow-gray-400 shadow-lg flex items-center gap-[5px]'>
+                        typing
+                        <span className="animate-bounce">.</span>
+                        <span className="animate-bounce delay-100">.</span>
+                        <span className="animate-bounce delay-200">.</span>
+                    </div>
+                </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         </div>
       }
       {selectedUser && <div className='w-full lg:w-[70%] h-[100px] fixed bottom-[20px] flex items-center justify-center '>
         <img src={frontendImage} alt="" className='w-[80px] absolute bottom-[100px] right-[20%] rounded-lg shadow-gray-400 shadow-lg' />
-        <form className='w-[95%] lg:w-[70%] h-[60px] bg-[rgb(23,151,194)] shadow-gray-400 shadow-lg rounded-full flex items-center gap-[20px] px-[20px] relative' onSubmit={handleSendMessage}>
+        {/* Added dark mode background to form container */}
+        <form className='w-[95%] lg:w-[70%] h-[60px] bg-[rgb(23,151,194)] dark:bg-[#1a7a9c] shadow-gray-400 shadow-lg rounded-full flex items-center gap-[20px] px-[20px] relative' onSubmit={handleSendMessage}>
           <div onClick={() => setShowPicker(prev => !prev)}>
             <RiEmojiStickerLine className='w-[25px] h-[25px] text-white cursor-pointer' />
           </div>
           <input type="file" accept="image/*" ref={image} hidden onChange={handleImage} />
-          <input type="text" className='w-full h-full px-[10px] outline-none border-0 text-[19px] text-white bg-transparent placeholder-white' placeholder='Message' onChange={(e) => setInput(e.target.value)} value={input} />
+          {/* Replaced generic onChange with custom handleInputChange */}
+          <input type="text" className='w-full h-full px-[10px] outline-none border-0 text-[19px] text-white bg-transparent placeholder-white' placeholder='Message' onChange={handleInputChange} value={input} />
           <div onClick={() => image.current.click()}>
             <FaImages className='w-[25px] h-[25px] cursor-pointer text-white' />
           </div>
@@ -110,8 +168,9 @@ function MessageArea() {
       </div>}
       {!selectedUser &&
         <div className='w-full h-full flex flex-col justify-center items-center'>
-          <h1 className='text-gray-700 font-bold text-[50px]'>Welcome to ChitChat</h1>
-          <span className='text-gray-700 font-semibold text-[30px]'>Chat Friendly !</span>
+          {/* Updated text classes for dark mode visibility */}
+          <h1 className='text-gray-700 dark:text-gray-200 font-bold text-[50px]'>Welcome to ChitChat</h1>
+          <span className='text-gray-700 dark:text-gray-400 font-semibold text-[30px]'>Chat Friendly !</span>
         </div>}
     </div>
   )

@@ -16,9 +16,20 @@ function App() {
   getOtherUsers()
   
   let userData = useSelector(state => state.user.userData)
+  let darkMode = useSelector(state => state.user.darkMode)
   let dispatch = useDispatch()
 
+
   useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    
     if (userData?._id) {
       const socketio = io(`${serverUrl}`, {
         query: {
